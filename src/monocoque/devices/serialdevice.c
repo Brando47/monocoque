@@ -189,12 +189,6 @@ int arduino_e36cluster_update(SimDevice* this, SimData* simdata)
         max_wheelspeed = fmax(max_wheelspeed, simdata->tyreRPS[i] * 0.5 * simdata->tyrediameter[i]); // m/s
     }
     
-    // double tyre_rear_rps = (simdata->tyreRPS[2] + simdata->tyreRPS[3]) * 0.5; //radians/sec
-    // double tyre_rps = fmax( fmax(simdata->tyreRPS[0], simdata->tyreRPS[1]), fmax(simdata->tyreRPS[2], simdata->tyreRPS[3])); //radians/sec
-    // slogt("tyre_rear_rps is %.2f", tyre_rear_rps);
-    // double tyre_rear_diam = (simdata->tyrediameter[2] + simdata->tyrediameter[3]) * 0.5; //metres
-    // slogt("tyre_rear_diam is %.2f", tyre_rear_diam);
-    // serialdevice->u.e36clusterdata.rear_wheelspeed = tyre_rear_rps * 0.5 * tyre_rear_diam * 3.6; //convert m/s to km/h
     serialdevice->u.e36clusterdata.wheelspeed = max_wheelspeed * 3.6; // convert m/s to km/h
     slogt("Updating arduino device wheel speed to %.2f", serialdevice->u.e36clusterdata.wheelspeed);
     slogt("ratio velocity to wheel speed %.2f", serialdevice->u.e36clusterdata.velocity / serialdevice->u.e36clusterdata.wheelspeed);
@@ -211,9 +205,6 @@ int arduino_e36cluster_update(SimDevice* this, SimData* simdata)
     serialdevice->u.e36clusterdata.fuel = simdata->fuel;
     slogt("Updating arduino device fuel to %.4f", serialdevice->u.e36clusterdata.fuel);
 
-    // average rear wheel temp
-    // serialdevice->u.e36clusterdata.rear_tyretemp = (simdata->tyretemp[2] + simdata->tyretemp[3]) * 0.5;
-    // slogt("Updating arduino device rear tyre temp to %i", serialdevice->u.e36clusterdata.rear_tyretemp);
     // max tyre temp
     uint32_t max_tyretemp = 0;
     for (int i = 0; i < 4; i++)
