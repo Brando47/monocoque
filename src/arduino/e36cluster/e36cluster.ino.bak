@@ -1,0 +1,124 @@
+#include <Tone.h>
+#include "e36cluster.h"
+
+// define pins
+#define PIN_TACH 2
+#define PIN_SPEEDO 4
+#define PIN_FUEL 5
+#define PIN_TEMP 6
+#define PIN_ECON 6
+// tach calibration
+#define MIN_FREQ_TACH 31.0
+#define MAX_FREQ_TACH 307.0
+#define MIN_FREQ_SPEEDO 30.0
+#define MAX_FREQ_SPEEDO 392.0
+// speedo calibration
+#define MIN_RPM 400.0
+#define MAX_RPM 10000.0
+#define MIN_SPEED 25.0
+#define MAX_SPEED 300.0
+
+#define BYTE_SIZE sizeof(E36ClusterData)
+
+E36ClusterData sd;
+
+Tone tone_tach;
+Tone tone_speedo;
+
+int rpms = 0;
+float out_freq_rpms = MIN_FREQ_TACH;
+float rpm2freq = (MAX_FREQ_TACH - MIN_FREQ_TACH) / (MAX_RPM - MIN_RPM);
+
+int velocity = 0;
+int wheelspeed = 0;
+float out_freq_velocity = MIN_FREQ_SPEEDO;
+float velocity2freq = (MAX_FREQ_SPEEDO - MIN_FREQ_SPEEDO) / (MAX_SPEED - MIN_SPEED);
+
+int gas = 0;
+int fuel = 0;
+int tyretemp = 0;
+
+
+int out_fuel = 0;
+int fuel_test = 0;
+int out_tyretemp = 0;
+int temp_test = 0;
+int econ_test = 0;
+int out_econ = 0;
+
+void setup() {
+    Serial.begin(115200);
+    sd.rpms = MIN_RPM;
+    sd.velocity = MIN_SPEED;
+    sd.rear_wheelspeed = MIN_SPEED;
+    sd.gas = 0;
+    sd.fuel = 0;
+    sd.rear_tyretemp = 0;
+
+    tone_tach.begin(PIN_TACH);
+    tone_speedo.begin(PIN_SPEEDO);
+    //pinMode(PIN_FUEL, OUTPUT);
+    //pinMode(PIN_TEMP, OUTPUT);
+    pinMode(PIN_ECON, OUTPUT);
+
+    tone_tach.play(MIN_FREQ_TACH);
+    tone_speedo.play(MIN_FREQ_SPEEDO);
+    //analogWrite(PIN_FUEL, 160);
+    //analogWrite(PIN_TEMP, 100);
+    analogWrite(PIN_ECON, 255);
+    
+    //TODO: gauge sweep
+}
+
+void loop() {
+    char buff[BYTE_SIZE];
+
+    if (Serial.available() >= BYTE_SIZE)
+    {
+        // read in serial data
+        Serial.readBytes(buff, BYTE_SIZE);
+        memcpy(&sd, &buff, BYTE_SIZE);
+        rpms = sd.rpms;
+        velocity = sd.velocity;
+        wheelspeed = sd.rear_wheelspeed; // can use when tyrediameter is defined (currently set to -1)
+        gas = sd.gas;
+        fuel = sd.fuel;
+        tyretemp = sd.rear_tyretemp;
+
+        // update tach
+        out_freq_rpms = rpms * rpm2freq + MIN_FREQ_TACH;
+        out_freq_rpms = min(out_freq_rpms, MAX_FREQ_TACH);
+        out_freq_rpms = max(out_freq_rpms, MIN_FREQ_TACH);
+        //out_freq_rpms = map(rpms, 1000, 7000, 50, 350);
+        //out_freq_rpms = constrain(out_freq_rpms, MIN_FREQ_TACH, MAX_FREQ_TACH);
+        tone_tach.play(out_freq_rpms);
+
+        // update speedo
+        out_freq_velocity = wheelspeed * velocity2freq + MIN_FREQ_SPEEDO;
+        out_freq_velocity = min(out_freq_velocity, MAX_FREQ_SPEEDO);
+        out_freq_velocity = max(out_freq_velocity, MIN_FREQ_SPEEDO);
+        tone_speedo.play(out_freq_velocity);
+
+
+        // update fuel
+        //int fuel_test = gas * 170 / 255;
+        fuel_test = map(gas, 0, 255, 0, 160);
+        fuel = constrain(fuel, 0, 60);
+        out_fuel = map(fuel, 0, 60, 1, 173);
+        //analogWrite(PIN_FUEL, out_fuel);
+
+        // update temp
+        //int temp_test = ((255 - gas) * 150 / 255) + 6;
+        //int temp_test = map(gas, 0, 255, 150, 6);
+        tyretemp = constrain(tyretemp, 150, 200); //normally min 0
+        out_tyretemp = map(tyretemp, 0, 200, 150, 6);
+        //analogWrite(PIN_TEMP, out_tyretemp);
+
+        // update econ
+        econ_test = 255-gas;
+        econ_test = map(gas, 0, 255, 200, 4);
+        analogWrite(PIN_ECON, econ_test);
+
+        //delay(10);
+    }
+}

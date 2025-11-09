@@ -175,6 +175,11 @@ int strtodevsubtype(const char* device_subtype, DeviceSettings* ds, int simdev)
                 ds->dev_subtype = SIMDEVTYPE_SIMWIND;
                 break;
             }
+            if (strcicmp(device_subtype, "E36Cluster") == 0)
+            {
+                ds->dev_subtype = SIMDEVTYPE_E36CLUSTER;
+                break;
+            }
             if (strcicmp(device_subtype, "SerialHaptic") == 0 || strcicmp(device_subtype, "Haptic") == 0)
             {
                 slogt("found serial haptic device settings");

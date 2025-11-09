@@ -18,6 +18,7 @@
 #include "../../arduino/simwind/simwind.h"
 #include "../../arduino/simhaptic/simhaptic.h"
 #include "../../arduino/shiftlights/shiftlights.h"
+#include "../../arduino/e36cluster/e36cluster.h"
 
 typedef struct SimDevice SimDevice;
 
@@ -72,6 +73,7 @@ typedef struct
         SimWindData simwinddata;
         SimHapticData simhapticdata;
         ShiftLightsData shiftlightsdata;
+        E36ClusterData e36clusterdata;
         WheelDevice wheeldevice;
     } u;
 }
@@ -80,6 +82,7 @@ SerialDevice;
 int arduino_shiftlights_update(SimDevice* this, SimData* simdata);
 int arduino_simwind_update(SimDevice* this, SimData* simdata);
 int arduino_simhaptic_update(SimDevice* this, SimData* simdata);
+int arduino_e36cluster_update(SimDevice* this, SimData* simdata);
 int serialdev_free(SimDevice* this);
 
 SerialDevice* new_serial_device(DeviceSettings* ds, MonocoqueSettings* ms);

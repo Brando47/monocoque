@@ -31,7 +31,8 @@ typedef enum
     SIMDEVTYPE_USBWHEEL          = 6,
     SIMDEVTYPE_SERIALWHEEL       = 7,
     SIMDEVTYPE_SIMLED            = 8,
-    SIMDEVTYPE_ARDUINOCUSTOM     = 9
+    SIMDEVTYPE_ARDUINOCUSTOM     = 9,
+    SIMDEVTYPE_E36CLUSTER        = 10
 }
 DeviceSubType;
 

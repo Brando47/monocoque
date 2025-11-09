@@ -170,6 +170,66 @@ int arduino_simhaptic_update(SimDevice* this, SimData* simdata)
     return result;
 }
 
+int arduino_e36cluster_update(SimDevice* this, SimData* simdata)
+{
+    SerialDevice* serialdevice = (void *) this->derived;
+    int result = 1;
+
+    serialdevice->u.e36clusterdata.start_byte = 0xAA;
+
+    serialdevice->u.e36clusterdata.rpms = simdata->rpms;
+    slogt("Updating arduino device rpms to %i", serialdevice->u.e36clusterdata.rpms);
+
+    serialdevice->u.e36clusterdata.velocity = simdata->velocity;
+    slogt("Updating arduino device velocity to %i", serialdevice->u.e36clusterdata.velocity);
+
+    double max_wheelspeed = 0; // "real" wheelspeed (i.e. accounts for tyre slip)
+    for (int i = 0; i < 4; i++)
+    {
+        max_wheelspeed = fmax(max_wheelspeed, simdata->tyreRPS[i] * 0.5 * simdata->tyrediameter[i]); // m/s
+    }
+    
+    // double tyre_rear_rps = (simdata->tyreRPS[2] + simdata->tyreRPS[3]) * 0.5; //radians/sec
+    // double tyre_rps = fmax( fmax(simdata->tyreRPS[0], simdata->tyreRPS[1]), fmax(simdata->tyreRPS[2], simdata->tyreRPS[3])); //radians/sec
+    // slogt("tyre_rear_rps is %.2f", tyre_rear_rps);
+    // double tyre_rear_diam = (simdata->tyrediameter[2] + simdata->tyrediameter[3]) * 0.5; //metres
+    // slogt("tyre_rear_diam is %.2f", tyre_rear_diam);
+    // serialdevice->u.e36clusterdata.rear_wheelspeed = tyre_rear_rps * 0.5 * tyre_rear_diam * 3.6; //convert m/s to km/h
+    serialdevice->u.e36clusterdata.wheelspeed = max_wheelspeed * 3.6; // convert m/s to km/h
+    slogt("Updating arduino device wheel speed to %.2f", serialdevice->u.e36clusterdata.wheelspeed);
+    slogt("ratio velocity to wheel speed %.2f", serialdevice->u.e36clusterdata.velocity / serialdevice->u.e36clusterdata.wheelspeed);
+
+    // send turboboost
+    serialdevice->u.e36clusterdata.turboboost = simdata->turboboost * 14.7; // pretend turboboost is in bar, convert to psi (reasonable values for the gauge)
+    slogt("Updating arduino device turboboost to %.2f", serialdevice->u.e36clusterdata.turboboost);
+
+    // send gas pedal, mostly used for testing
+    serialdevice->u.e36clusterdata.gas = simdata->gas * 255;
+    slogt("Updating arduino device gas to %i", serialdevice->u.e36clusterdata.gas);
+
+    // max of 60L on e36 cluster
+    serialdevice->u.e36clusterdata.fuel = simdata->fuel;
+    slogt("Updating arduino device fuel to %.4f", serialdevice->u.e36clusterdata.fuel);
+
+    // average rear wheel temp
+    // serialdevice->u.e36clusterdata.rear_tyretemp = (simdata->tyretemp[2] + simdata->tyretemp[3]) * 0.5;
+    // slogt("Updating arduino device rear tyre temp to %i", serialdevice->u.e36clusterdata.rear_tyretemp);
+    // max tyre temp
+    uint32_t max_tyretemp = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        max_tyretemp = fmax(max_tyretemp, simdata->tyretemp[i]);
+    }
+    serialdevice->u.e36clusterdata.tyretemp = max_tyretemp;
+    slogt("Updating arduino device tyre temp to %i", serialdevice->u.e36clusterdata.tyretemp);
+
+    size_t size = sizeof(E36ClusterData);
+
+    arduino_update(serialdevice, &serialdevice->u.e36clusterdata, size);
+
+    return result;
+}
+
 int serialdev_free(SimDevice* this)
 {
     SerialDevice* serialdevice = (void *) this->derived;
@@ -274,6 +334,7 @@ static const vtable arduino_custom_vtable = { &arduino_custom_updater, &serialde
 static const vtable arduino_simled_custom_vtable = { &arduino_customled_updater, &serialdev_free };
 static const vtable arduino_simwind_vtable = { &arduino_simwind_update, &serialdev_free };
 static const vtable arduino_simhaptic_vtable = { &arduino_simhaptic_update, &serialdev_free };
+static const vtable arduino_e36cluster_vtable = { &arduino_e36cluster_update, &serialdev_free };
 static const vtable serialwheel_vtable = { &serial_wheel_update, &serial_wheel_free };
 
 SerialDevice* new_serial_device(DeviceSettings* ds, MonocoqueSettings* ms) {
@@ -323,6 +384,10 @@ SerialDevice* new_serial_device(DeviceSettings* ds, MonocoqueSettings* ms) {
             this->devicetype = ARDUINODEV__CUSTOM;
             this->m.vtable = &arduino_custom_vtable;
             slogi("Initializing custom arduino device.");
+        case (SIMDEVTYPE_E36CLUSTER):
+            this->devicetype = ARDUINODEV__E36CLUSTER;
+            this->m.vtable = &arduino_e36cluster_vtable;
+            slogi("Initializing arduino devices for E36 cluster.");
             break;
         case (SIMDEVTYPE_SERIALHAPTIC):
             this->devicetype = ARDUINODEV__HAPTIC;
