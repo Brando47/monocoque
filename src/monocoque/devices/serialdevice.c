@@ -384,6 +384,7 @@ SerialDevice* new_serial_device(DeviceSettings* ds, MonocoqueSettings* ms) {
             this->devicetype = ARDUINODEV__CUSTOM;
             this->m.vtable = &arduino_custom_vtable;
             slogi("Initializing custom arduino device.");
+            break;
         case (SIMDEVTYPE_E36CLUSTER):
             this->devicetype = ARDUINODEV__E36CLUSTER;
             this->m.vtable = &arduino_e36cluster_vtable;
