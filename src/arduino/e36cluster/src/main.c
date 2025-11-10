@@ -276,7 +276,7 @@ static void gauge_sweep(void) {
 
 static void watch_uart(void *arg) {
 
-    uart_flush(uart_num); // fixes case where ESP32 is booted while being sent serial
+    uart_flush(uart_num); // in case ESP32 is booted while being sent serial
 
     float fuel_last = 0;
     int64_t fuel_time_now = esp_timer_get_time(); // microseconds
@@ -372,9 +372,6 @@ static void watch_uart(void *arg) {
         ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, FUEL_CHAN));
 
         // update temp
-        // float out_temp = cal(temp, tyretemp_temp_map, temp_limit);
-        // temp = fuel*3 - 30;
-        // float out_temp = 123 * pow(2.7183, 1192.3069 * (1/(temp + 273.15) - 1/(125. + 273.15)));
         float out_temp = cal_temp(temp, temp_Beta, temp_map);
         // sprintf(uart_buff, "temp_Beta = %.4f  temp = %i  out_temp = %.4f  out_temp_V = %.4f", temp_Beta, temp, out_temp, out_temp * 5. / 1024.);echo_uart(uart_buff); // this line causes some kerfuffle for some reason, fine for testing
         ESP_ERROR_CHECK(ledc_set_duty(LED_SPEED_MODE, TEMP_CHAN, constrain(out_temp, temp_limit)));
@@ -396,5 +393,5 @@ void app_main() {
     gauge_sweep();
 
     vTaskDelay(pdMS_TO_TICKS(1000));
-    xTaskCreate(watch_uart, "watch_uart_task", WATCH_UART_STACK_SIZE, NULL, 10, NULL); //tskIDLE_PRIORITY
+    xTaskCreate(watch_uart, "watch_uart_task", WATCH_UART_STACK_SIZE, NULL, 10, NULL);
 }
